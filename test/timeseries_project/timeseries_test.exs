@@ -8,12 +8,7 @@ defmodule TimeseriesProject.TimeseriesTest do
 
     import TimeseriesProject.TimeseriesFixtures
 
-    @invalid_attrs %{symbol: nil, price: nil}
-
-    test "list_users/0 returns all users" do
-      stock = stock_fixture()
-      assert Timeseries.list_users() == [stock]
-    end
+    @invalid_attrs %{symbol: nil, price: nil, timestamp: nil}
 
     test "get_stock!/1 returns the stock with given id" do
       stock = stock_fixture()
@@ -21,11 +16,12 @@ defmodule TimeseriesProject.TimeseriesTest do
     end
 
     test "create_stock/1 with valid data creates a stock" do
-      valid_attrs = %{symbol: "some symbol", price: 42}
+      valid_attrs = %{symbol: "some symbol", price: "117.452", timestamp: "1601551744"}
 
       assert {:ok, %Stock{} = stock} = Timeseries.create_stock(valid_attrs)
       assert stock.symbol == "some symbol"
-      assert stock.price == 42
+      assert stock.price == "117.452"
+      assert stock.timestamp == "1601551744"
     end
 
     test "create_stock/1 with invalid data returns error changeset" do
@@ -34,11 +30,12 @@ defmodule TimeseriesProject.TimeseriesTest do
 
     test "update_stock/2 with valid data updates the stock" do
       stock = stock_fixture()
-      update_attrs = %{symbol: "some updated symbol", price: 43}
+      update_attrs = %{symbol: "some symbol", price: "117.452", timestamp: "1601551744"}
 
       assert {:ok, %Stock{} = stock} = Timeseries.update_stock(stock, update_attrs)
-      assert stock.symbol == "some updated symbol"
-      assert stock.price == 43
+      assert stock.symbol == "some symbol"
+      assert stock.price == "117.452"
+      assert stock.timestamp == "1601551744"
     end
 
     test "update_stock/2 with invalid data returns error changeset" do
@@ -64,7 +61,7 @@ defmodule TimeseriesProject.TimeseriesTest do
 
     import TimeseriesProject.TimeseriesFixtures
 
-    @invalid_attrs %{symbol: nil, price: nil}
+    @invalid_attrs %{symbol: nil, price: nil, timestamp: nil}
 
     test "list_stocks/0 returns all stocks" do
       stock = stock_fixture()
@@ -77,11 +74,12 @@ defmodule TimeseriesProject.TimeseriesTest do
     end
 
     test "create_stock/1 with valid data creates a stock" do
-      valid_attrs = %{symbol: "some symbol", price: 42}
+      valid_attrs = %{symbol: "some symbol", price: "117.452", timestamp: "1601551744"}
 
       assert {:ok, %Stock{} = stock} = Timeseries.create_stock(valid_attrs)
       assert stock.symbol == "some symbol"
-      assert stock.price == 42
+      assert stock.price == "117.452"
+      assert stock.timestamp == "1601551744"
     end
 
     test "create_stock/1 with invalid data returns error changeset" do
@@ -90,11 +88,12 @@ defmodule TimeseriesProject.TimeseriesTest do
 
     test "update_stock/2 with valid data updates the stock" do
       stock = stock_fixture()
-      update_attrs = %{symbol: "some updated symbol", price: 43}
+      update_attrs = %{symbol: "some updated symbol", price: "117.453", timestamp: "1601551744"}
 
       assert {:ok, %Stock{} = stock} = Timeseries.update_stock(stock, update_attrs)
       assert stock.symbol == "some updated symbol"
-      assert stock.price == 43
+      assert stock.price == "117.453"
+      assert stock.timestamp == "1601551744"
     end
 
     test "update_stock/2 with invalid data returns error changeset" do

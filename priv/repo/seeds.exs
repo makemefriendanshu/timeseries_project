@@ -9,5 +9,3 @@
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
-
-# mix phx.gen.html Timeseries Stock stocks symbol:string price:integer

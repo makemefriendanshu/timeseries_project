@@ -3,9 +3,9 @@ defmodule TimeseriesProjectWeb.StockControllerTest do
 
   import TimeseriesProject.TimeseriesFixtures
 
-  @create_attrs %{symbol: "some symbol", price: 42}
-  @update_attrs %{symbol: "some updated symbol", price: 43}
-  @invalid_attrs %{symbol: nil, price: nil}
+  @create_attrs %{symbol: "some symbol", price: "117.452", timestamp: "1601551744"}
+  @update_attrs %{symbol: "some updated symbol", price: "117.453", timestamp: "1601551744"}
+  @invalid_attrs %{symbol: nil, price: nil, timestamp: nil}
 
   describe "index" do
     test "lists all stocks", %{conn: conn} do

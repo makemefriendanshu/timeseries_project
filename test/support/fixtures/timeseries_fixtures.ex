@@ -11,8 +11,9 @@ defmodule TimeseriesProject.TimeseriesFixtures do
     {:ok, stock} =
       attrs
       |> Enum.into(%{
-        price: 42,
-        symbol: "some symbol"
+        price: "117.452",
+        symbol: "some symbol",
+        timestamp: "1601551744"
       })
       |> TimeseriesProject.Timeseries.create_stock()
 
