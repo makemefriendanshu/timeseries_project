@@ -2,9 +2,10 @@ defmodule TimeseriesProject.Timeseries.Stock do
   use Ecto.Schema
   import Ecto.Changeset
 
-  schema "users" do
+  schema "stocks" do
     field :symbol, :string
-    field :price, :integer
+    field :timestamp, :string
+    field :price, :string
 
     timestamps()
   end
@@ -12,7 +13,7 @@ defmodule TimeseriesProject.Timeseries.Stock do
   @doc false
   def changeset(stock, attrs) do
     stock
-    |> cast(attrs, [:symbol, :price])
-    |> validate_required([:symbol, :price])
+    |> cast(attrs, [:symbol, :price, :timestamp])
+    |> validate_required([:symbol, :price, :timestamp])
   end
 end

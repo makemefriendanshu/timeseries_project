@@ -9,15 +9,15 @@ defmodule TimeseriesProject.Timeseries do
   alias TimeseriesProject.Timeseries.Stock
 
   @doc """
-  Returns the list of users.
+  Returns the list of stocks.
 
   ## Examples
 
-      iex> list_users()
+      iex> list_stocks()
       [%Stock{}, ...]
 
   """
-  def list_users do
+  def list_stocks do
     Repo.all(Stock)
   end
 

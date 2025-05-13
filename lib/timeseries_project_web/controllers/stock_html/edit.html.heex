@@ -1,0 +1,8 @@
+<.header>
+  Edit Stock {@stock.id}
+  <:subtitle>Use this form to manage stock records in your database.</:subtitle>
+</.header>
+
+<.stock_form changeset={@changeset} action={~p"/stocks/#{@stock}"} />
+
+<.back navigate={~p"/stocks"}>Back to stocks</.back>

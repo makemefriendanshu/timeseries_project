@@ -347,22 +347,23 @@ defmodule TimeseriesProjectWeb.CoreComponents do
 
   def input(assigns) do
     ~H"""
-    <div phx-feedback-for={@name}>
-      <.label for={@id}><%= @label %></.label>
+    <div phx-feedback-for={@field.name}>
+      <.label for={@field.id}><%= @label %></.label>
       <input
         type={@type}
-        name={@name}
-        id={@id || @name}
-        value={@value}
+        name={@field.name}
+        id={@field.id || @field.name}
+        value={@field.value}
         class={[
-          input_border(@errors),
+          input_border(@field.errors),
           "mt-2 block w-full rounded-lg border-zinc-300 py-[7px] px-[11px]",
           "text-zinc-900 focus:outline-none focus:ring-4 sm:text-sm sm:leading-6",
           "phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400 phx-no-feedback:focus:ring-zinc-800/5"
         ]}
         {@rest}
       />
-      <.error :for={msg <- @errors}><%= msg %></.error>
+      <% result = @field.errors |> Enum.reduce([], fn {key, _}, acc -> [key | acc]  end) %>
+      <.error :for={msg <- result}><%= msg %></.error>
     </div>
     """
   end

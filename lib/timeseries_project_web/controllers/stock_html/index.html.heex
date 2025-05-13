@@ -1,0 +1,26 @@
+<.header>
+  Listing Stocks
+  <:actions>
+    <.link href={~p"/stocks/new"}>
+      <.button>New Stock</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.table id="stocks" rows={@stocks} row_click={&JS.navigate(~p"/stocks/#{&1}")}>
+  <:col :let={stock} label="Symbol">{stock.symbol}</:col>
+  <:col :let={stock} label="Timestamp">{stock.timestamp}</:col>
+  <:col :let={stock} label="Timestamp-UTC">{stock.timestamp |> String.to_integer |> DateTime.from_unix! }</:col>
+  <:col :let={stock} label="Price">{stock.price |> String.to_float}</:col>
+  <:action :let={stock}>
+    <div class="sr-only">
+      <.link navigate={~p"/stocks/#{stock}"}>Show</.link>
+    </div>
+    <.link navigate={~p"/stocks/#{stock}/edit"}>Edit</.link>
+  </:action>
+  <:action :let={stock}>
+    <.link href={~p"/stocks/#{stock}"} method="delete" data-confirm="Are you sure?">
+      Delete
+    </.link>
+  </:action>
+</.table>

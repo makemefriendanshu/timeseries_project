@@ -1,0 +1,18 @@
+<.header>
+  Stock {@stock.id}
+  <:subtitle>This is a stock record from your database.</:subtitle>
+  <:actions>
+    <.link href={~p"/stocks/#{@stock}/edit"}>
+      <.button>Edit stock</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.list>
+  <:item title="Symbol">{@stock.symbol}</:item>
+  <:item title="Timestamp">{@stock.timestamp}</:item>
+  <:item title="Timestamp">{@stock.timestamp |> String.to_integer |> DateTime.from_unix! }</:item>
+  <:item title="Price">{@stock.price |> String.to_float}</:item>
+</.list>
+
+<.back navigate={~p"/stocks"}>Back to stocks</.back>
