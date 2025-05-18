@@ -17,9 +17,8 @@ defmodule TimeseriesProjectWeb.Router do
   scope "/", TimeseriesProjectWeb do
     pipe_through :browser
 
+    get "/", PageController, :home
     resources "/stocks", StockController
-    get "/", StockController, :home
-    post "/stocks/graph", StockController, :get_data
   end
 
   # Other scopes may use custom stacks.

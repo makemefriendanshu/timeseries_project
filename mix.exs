@@ -50,9 +50,8 @@ defmodule TimeseriesProject.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
-      {:plug_cowboy, "~> 2.5"},
-      {:csv, "~> 3.2.2"},
-      {:json, "~> 1.4"}    ]
+      {:plug_cowboy, "~> 2.5"}
+    ]
   end
 
   # Aliases are shortcuts or tasks specific to the current project.
