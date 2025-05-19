@@ -3,6 +3,142 @@ defmodule TimeseriesProjectWeb.StockController do
 
   alias TimeseriesProject.Timeseries
   alias TimeseriesProject.Timeseries.Stock
+  alias TimeseriesProject.Repo
+
+  def home(conn, _params) do
+    symbols = Repo.all(Stock) |> Enum.map(fn x -> x.symbol end) |> Enum.uniq()
+    time_axis = ["Hourly", "Daily"]
+    render(conn, :home, symbols: symbols, time_axis: time_axis)
+  end
+
+  def get_data(conn, %{"action" => "get_graph", "symbol" => symbol, "time" => "Daily"} = _params) do
+    stocks = Repo.all(Stock)
+
+    timestamps =
+      stocks
+      |> Enum.filter(&(&1.symbol == symbol))
+      |> Enum.map(
+        &%{
+          "timestamp" =>
+            &1.timestamp |> String.to_integer() |> DateTime.from_unix!() |> DateTime.to_date(),
+          "price" => &1.price
+        }
+      )
+      |> Enum.sort_by(& &1["timestamp"], {:asc, Date})
+
+    conn
+    |> json(%{timestamps: timestamps})
+  end
+
+  def get_data(conn, %{"action" => "get_graph", "symbol" => symbol, "time" => "Hourly"} = _params) do
+    stocks = Repo.all(Stock)
+
+    timestamps =
+      stocks
+      |> Enum.filter(&(&1.symbol == symbol))
+      |> Enum.map(
+        &%{
+          "timestamp" =>
+            &1.timestamp |> String.to_integer() |> DateTime.from_unix!() |> DateTime.to_time(),
+          "price" => &1.price
+        }
+      )
+      |> Enum.sort_by(& &1["timestamp"], {:asc, Time})
+
+    conn
+    |> json(%{timestamps: timestamps})
+  end
+
+  def get_data(conn, %{"action" => "file_upload", "file" => file} = _params) do
+    if file.content_type == "text/tab-separated-values" do
+      Stock
+      |> Repo.delete_all()
+
+      file.path
+      |> Path.expand(__DIR__)
+      |> File.stream!()
+      |> CSV.decode!(headers: true, separator: ?\t, delimiter: "\n")
+      |> Enum.to_list()
+      |> Enum.map(fn n ->
+        %Stock{}
+        |> Stock.changeset(n)
+        |> Repo.insert()
+      end)
+
+      symbols =
+        Repo.all(Stock)
+        |> Enum.map(fn x -> x.symbol end)
+        |> Enum.uniq()
+
+      conn
+      |> json(%{success: "Success. File upload is completed.", symbols: symbols})
+    else
+      conn
+      |> json(%{failure: "Failure. Please provide TSV file."})
+    end
+  end
+
+  def get_data(
+        conn,
+        %{
+          "action" => "download",
+          "enddate" => enddate,
+          "startdate" => startdate,
+          "symbol" => symbol
+        } = _params
+      ) do
+    startdate =
+      if startdate == "", do: Date.utc_today() |> Date.to_string(), else: startdate
+
+    enddate =
+      if enddate == "", do: Date.utc_today() |> Date.to_string(), else: enddate
+
+    symbol =
+      if symbol == "", do: ["AAPL", "MSFT", "GOOGL"], else: symbol
+
+    {_, sd, _} =
+      DateTime.from_iso8601(
+        (startdate <>
+           "T#{Enum.random(0..23) |> append_zero}:#{Enum.random(0..59) |> append_zero}:#{Enum.random(0..59) |> append_zero}Z")
+      )
+
+    {_, ed, _} =
+      DateTime.from_iso8601(
+        (enddate <>
+           "T#{Enum.random(0..23) |> append_zero}:#{Enum.random(0..59) |> append_zero}:#{Enum.random(0..59) |> append_zero}Z")
+      )
+
+    {sd, ed} =
+      if DateTime.compare(sd, ed) == :lt,
+        do: {sd |> DateTime.to_unix(), ed |> DateTime.to_unix()},
+        else: {ed |> DateTime.to_unix(), sd |> DateTime.to_unix()}
+
+    content =
+      1..100
+      |> Enum.map(fn _n ->
+        %{
+          symbol: Enum.random(symbol),
+          timestamp: "#{Enum.random(sd..ed)}",
+          price: "#{Enum.random(1..1_000)}.#{Enum.random(1..1_00)}"
+        }
+      end)
+      |> CSV.encode(headers: true, separator: ?\t, delimiter: "\n")
+      |> Enum.to_list()
+
+    file =
+      %{
+        name: "new-#{Enum.random(1..1_00)}.tsv",
+        type: "text/tab-separated-values",
+        data: content
+      }
+
+    conn
+    |> json(%{file: file})
+  end
+
+  def append_zero(num) do
+    if num < 10, do: "0#{num}", else: "#{num}"
+  end
 
   def index(conn, _params) do
     stocks = Timeseries.list_stocks()

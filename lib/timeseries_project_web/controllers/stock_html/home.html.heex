@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Timeseries Data Plot</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"
+        integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div>
+        <label for="startdate">Start date:</label>
+        <input type="date" id="startdate" name="startdate">
+        <label for="enddate" style="margin-left: 30px;">End date:</label>
+        <input type="date" id="enddate" name="enddate">
+        <div style="margin-top: 20px;">
+            <input type="text" id="newOptionInput" placeholder="Add new stock">
+            <button
+                class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 "
+                onClick={"add_option();"} style="margin-left: 30px;">
+                Add
+            </button>
+            <div id="checkboxes" style="margin-top: 10px;">
+                <input class="stock" type="checkbox" name="AAPL" value="AAPL" class="checkbox"> <label>AAPL</label>
+                <input class="stock" type="checkbox" name="MSFT" value="MSFT" class="checkbox"> <label>MSFT</label>
+            </div>
+        </div>
+        <button
+            class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 "
+            onClick={"get_file();"} style="margin-top: 30px;">
+            Get File
+        </button>
+
+        <div id="file-download"></div>
+    </div>
+
+
+    <div style="margin-bottom: 50px; margin-top: 50px;">
+        <div id="upload-button">
+            <p class="upload-button-text">Upload TSV file</p>
+        </div>
+        <input id="file-upload"
+            class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80"
+            type="file" style="margin-left: 0;" />
+        <div id="message"></div>
+    </div>
+
+    <select id="data-selector-symbol">
+        <%= for symbol <- @symbols do %>
+            <option value={symbol}>
+                <%= symbol %>
+            </option>
+            <% end %>
+    </select>
+
+    <select id="data-selector-time">
+        <%= for time_axis <- @time_axis do %>
+            <option value={time_axis}>
+                <%= time_axis %>
+            </option>
+            <% end %>
+    </select>
+    <button
+        class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 "
+        onClick={"get_data();"} style="margin-left: 30px;">
+        Get Data
+    </button>
+    <div id="myChartContainer">
+        <canvas id="myChart" width="400" height="200"
+            style="display: block; box-sizing: border-box; height: 100%; width: 100%;"></canvas>
+    </div>
+
+    <style>
+        input {
+            margin-left: 10px;
+        }
+
+        label {
+            margin-left: 4px;
+        }
+    </style>
+
+    <script>
+        function get_file() {
+            startdate = $('#startdate')[0].value
+            enddate = $('#enddate')[0].value
+            stock = $('.stock')
+            symbol = []
+            for (i = 0; i < stock.length; i++) {
+                if (stock[i].checked) {
+                    symbol.push(stock[i].value)
+                }
+            }
+            if (symbol.length == 0) {
+                symbol = ""
+            }
+            data = { _method: 'post', _csrf_token: '<%= get_csrf_token() %>', startdate: startdate, enddate: enddate, symbol: symbol, action: "download" };
+            url = "/stocks/graph"
+            request = $.post(url, data)
+            request.done(function (res) {
+                document.getElementById('file-download').insertAdjacentHTML('beforeend', '<a href="data:' + res.file.name + ';base64,' + btoa(res.file.data.join('')) + '" download=' + res.file.name + ' id="download_' + res.file.name + '" ></a>  <button class="btn btn-outline-secondary waves-effect waves-light" style="margin-top: 35px;" onClick={document.getElementById("download_' + res.file.name + '").click();}><u>Download ( ' + res.file.name + ' )</u></button>')
+            })
+        }
+
+        function add_option() {
+            const newOption = document.getElementById('newOptionInput').value.toUpperCase();
+            if (newOption) {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'stock';
+                checkbox.name = newOption;
+                checkbox.value = newOption;
+                const label = document.createElement('label');
+                label.textContent = newOption;
+                const container = document.getElementById('checkboxes');
+                container.appendChild(checkbox);
+                container.appendChild(label);
+                document.getElementById('newOptionInput').value = '';
+            }
+        }
+
+        $(document).ready(function () {
+            var readURL = async function (input) {
+                if (input.files && input.files[0]) {
+                    var reader = new FileReader();
+
+                    reader.onload = function (e) {
+                        if ($(".upload-button-text").length != 0) {
+                            $(".upload-button-text")[0].remove();
+                        }
+                        let fileAsText = e.target.result;
+                    }
+                    var actionurl = "/stocks/graph";
+                    let formData = new FormData();
+                    formData.append("file", input.files[0]);
+                    formData.append("action", "file_upload");
+                    formData.append("_csrf_token", "<%= get_csrf_token() %>");
+                    var resp = await fetch(actionurl, {
+                        method: "POST",
+                        body: formData
+                    });
+                    var jobj = await resp.json();
+
+                    if (Object.keys(jobj).includes("success")) {
+                        document.getElementById('message').innerHTML = ''
+                        document.getElementById('data-selector-symbol').innerHTML = ''
+                        jobj['symbols'].map(function (a) { document.getElementById('data-selector-symbol').insertAdjacentHTML('beforeend', '<<option value="' + a + '">' + a + '</option>'); })
+                        get_data()
+                    }
+                    else {
+                        document.getElementById('message').innerHTML = ''
+                        document.getElementById('message').insertAdjacentHTML('beforeend', jobj["failure"]);
+                        document.getElementById('myChart').getContext('2d').canvas.outerHTML = ''
+                        document.getElementById('myChartContainer').insertAdjacentHTML('beforeend', '<canvas id="myChart" width="400" height="200" style="display: block; box-sizing: border-box; height: 100%; width: 100%;"></canvas>');
+                    }
+                }
+            }
+
+            $("#file-upload").on('change', function () {
+                readURL(this);
+            });
+
+            $("#upload-button").on('click', function () {
+                $("#file-upload").click();
+            });
+        });
+
+        function get_data() {
+            data = { _method: 'post', _csrf_token: '<%= get_csrf_token() %>', action: 'get_graph', symbol: document.getElementById('data-selector-symbol').value, time: document.getElementById('data-selector-time').value };
+            url = "/stocks/graph"
+            request = $.post(url, data);
+            request.done(function (res) {
+                if ($('#data-selector-symbol')[0].length == 0) {
+                    $('#data-selector-symbol')[0].innerHTML = ''
+                }
+                document.getElementById('myChart').getContext('2d').canvas.outerHTML = ''
+                document.getElementById('myChartContainer').insertAdjacentHTML('beforeend', '<canvas id="myChart" width="400" height="200" style="display: block; box-sizing: border-box; height: 100%; width: 100%;"></canvas>');
+
+                const ctx = document.getElementById('myChart').getContext('2d');
+
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: res['timestamps'].map(function (a) { return a.timestamp; }),
+                        datasets: [{
+                            label: 'Price',
+                            data: res['timestamps'].map(function (a) { return a.price; }),
+                            borderColor: 'blue',
+                            borderWidth: 1,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+
+</body>
+
+</html>
