@@ -26,6 +26,34 @@ defmodule TimeseriesProjectWeb.StockController do
       )
       |> Enum.sort_by(& &1["timestamp"], {:asc, Date})
 
+    uniq_timestamps = timestamps |> Enum.uniq_by(& &1["timestamp"]) |> Enum.map(& &1["timestamp"])
+
+    chunk_timestamps =
+      uniq_timestamps
+      |> Enum.map(fn x -> Enum.filter(timestamps, &(&1["timestamp"] == x)) end)
+
+    chunk_sum =
+      chunk_timestamps
+      |> Enum.map(
+        &(&1
+          |> Enum.reduce({0, 0}, fn %{"price" => p, "timestamp" => _}, {sum, count} ->
+            {sum + (p |> String.to_float()), count + 1}
+          end))
+      )
+      |> Enum.with_index()
+
+    timestamps =
+      chunk_sum
+      |> Enum.reduce([], fn {{sum, count}, v}, a ->
+        a ++
+          [
+            %{
+              "price" => sum / count,
+              "timestamp" => Enum.at(uniq_timestamps, v)
+            }
+          ]
+      end)
+
     conn
     |> json(%{timestamps: timestamps})
   end
@@ -44,6 +72,33 @@ defmodule TimeseriesProjectWeb.StockController do
         }
       )
       |> Enum.sort_by(& &1["timestamp"], {:asc, Time})
+
+    uniq_timestamps = timestamps |> Enum.uniq_by(& &1["timestamp"]) |> Enum.map(& &1["timestamp"])
+
+    chunk_timestamps =
+      uniq_timestamps |> Enum.map(fn x -> Enum.filter(timestamps, &(&1["timestamp"] == x)) end)
+
+    chunk_sum =
+      chunk_timestamps
+      |> Enum.map(
+        &(&1
+          |> Enum.reduce({0, 0}, fn %{"price" => p, "timestamp" => _}, {sum, count} ->
+            {sum + (p |> String.to_float()), count + 1}
+          end))
+      )
+      |> Enum.with_index()
+
+    timestamps =
+      chunk_sum
+      |> Enum.reduce([], fn {{sum, count}, v}, a ->
+        a ++
+          [
+            %{
+              "price" => sum / count,
+              "timestamp" => Enum.at(uniq_timestamps, v)
+            }
+          ]
+      end)
 
     conn
     |> json(%{timestamps: timestamps})
@@ -98,14 +153,14 @@ defmodule TimeseriesProjectWeb.StockController do
 
     {_, sd, _} =
       DateTime.from_iso8601(
-        (startdate <>
-           "T#{Enum.random(0..23) |> append_zero}:#{Enum.random(0..59) |> append_zero}:#{Enum.random(0..59) |> append_zero}Z")
+        startdate <>
+          "T#{Enum.random(0..23) |> append_zero}:#{Enum.random(0..59) |> append_zero}:#{Enum.random(0..59) |> append_zero}Z"
       )
 
     {_, ed, _} =
       DateTime.from_iso8601(
-        (enddate <>
-           "T#{Enum.random(0..23) |> append_zero}:#{Enum.random(0..59) |> append_zero}:#{Enum.random(0..59) |> append_zero}Z")
+        enddate <>
+          "T#{Enum.random(0..23) |> append_zero}:#{Enum.random(0..59) |> append_zero}:#{Enum.random(0..59) |> append_zero}Z"
       )
 
     {sd, ed} =
