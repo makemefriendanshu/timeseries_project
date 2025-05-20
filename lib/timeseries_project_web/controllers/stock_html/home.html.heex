@@ -6,69 +6,97 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.js"
         integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
 </head>
 
 <body>
     <div>
-        <label for="startdate">Start date:</label>
-        <input type="date" id="startdate" name="startdate">
-        <label for="enddate" style="margin-left: 30px;">End date:</label>
-        <input type="date" id="enddate" name="enddate">
-        <div style="margin-top: 20px;">
-            <input type="text" id="newOptionInput" placeholder="Add new stock">
-            <button
-                class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 "
-                onClick={"add_option();"} style="margin-left: 30px;">
-                Add
-            </button>
-            <div id="checkboxes" style="margin-top: 10px;">
-                <input class="stock" type="checkbox" name="AAPL" value="AAPL" class="checkbox"> <label>AAPL</label>
-                <input class="stock" type="checkbox" name="MSFT" value="MSFT" class="checkbox"> <label>MSFT</label>
+        <div class="container">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-toggle="tab" href="#plot" style="color: black;">Plot</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#generate" style="color: black;">Generate</a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <div id="generate" class="container tab-pane fade"><br>
+                    <label for="startdate">Start date:</label>
+                    <input type="date" id="startdate" name="startdate">
+                    <label for="enddate" style="margin-left: 30px;">End date:</label>
+                    <input type="date" id="enddate" name="enddate">
+                    <div style="margin-top: 20px;">
+                        <input type="text" id="newOptionInput" placeholder="Add new stock">
+                        <button
+                            class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 "
+                            onClick={"add_option();"} style="margin-left: 30px;">
+                            Add
+                        </button>
+                        <div id="checkboxes" style="margin-top: 10px;">
+                            <input class="stock" type="checkbox" name="AAPL" value="AAPL" class="checkbox">
+                            <label>AAPL</label>
+                            <input class="stock" type="checkbox" name="MSFT" value="MSFT" class="checkbox">
+                            <label>MSFT</label>
+                        </div>
+                    </div>
+                    <button
+                        class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 "
+                        onClick={"get_file();"} style="margin-top: 30px;">
+                        Get File
+                    </button>
+
+                    <div id="file-download"></div>
+                </div>
+
+                <div id="plot" class="container tab-pane active"><br>
+                    <div style="margin-bottom: 50px;">
+                        <div id="upload-button">
+                            <p class="upload-button-text">Upload TSV file</p>
+                        </div>
+                        <input id="file-upload"
+                            class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80"
+                            type="file" style="margin-left: 0;" />
+                        <div id="message"></div>
+                    </div>
+
+                    <select id="data-selector-symbol">
+                        <%= for symbol <- @symbols do %>
+                            <option value={symbol}>
+                                <%= symbol %>
+                            </option>
+                            <% end %>
+                    </select>
+
+                    <select id="data-selector-time" onchange="add_dates_dropdown_for_hourly(this.value)">
+                        <%= for time_axis <- @time_axis do %>
+                            <option value={time_axis}>
+                                <%= time_axis %>
+                            </option>
+                            <% end %>
+                    </select>
+
+                    <select id="data-selector-dates" style="display: none;">
+                        <%= for date <- @dates |> Enum.sort() do %>
+                            <option value={date}>
+                                <%= date %>
+                            </option>
+                            <% end %>
+                    </select>
+                    <button
+                        class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 "
+                        onClick={"get_data();"} style="margin-left: 30px;">
+                        Get Data
+                    </button>
+                    <div id="myChartContainer">
+                        <canvas id="myChart" width="400" height="200"
+                            style="display: block; box-sizing: border-box; height: 100%; width: 100%;"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
-        <button
-            class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 "
-            onClick={"get_file();"} style="margin-top: 30px;">
-            Get File
-        </button>
-
-        <div id="file-download"></div>
-    </div>
-
-
-    <div style="margin-bottom: 50px; margin-top: 50px;">
-        <div id="upload-button">
-            <p class="upload-button-text">Upload TSV file</p>
-        </div>
-        <input id="file-upload"
-            class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80"
-            type="file" style="margin-left: 0;" />
-        <div id="message"></div>
-    </div>
-
-    <select id="data-selector-symbol">
-        <%= for symbol <- @symbols do %>
-            <option value={symbol}>
-                <%= symbol %>
-            </option>
-            <% end %>
-    </select>
-
-    <select id="data-selector-time">
-        <%= for time_axis <- @time_axis do %>
-            <option value={time_axis}>
-                <%= time_axis %>
-            </option>
-            <% end %>
-    </select>
-    <button
-        class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80 "
-        onClick={"get_data();"} style="margin-left: 30px;">
-        Get Data
-    </button>
-    <div id="myChartContainer">
-        <canvas id="myChart" width="400" height="200"
-            style="display: block; box-sizing: border-box; height: 100%; width: 100%;"></canvas>
     </div>
 
     <style>
@@ -99,7 +127,7 @@
             url = "/stocks/graph"
             request = $.post(url, data)
             request.done(function (res) {
-                document.getElementById('file-download').insertAdjacentHTML('beforeend', '<a href="data:' + res.file.name + ';base64,' + btoa(res.file.data.join('')) + '" download=' + res.file.name + ' id="download_' + res.file.name + '" ></a>  <button class="btn btn-outline-secondary waves-effect waves-light" style="margin-top: 35px;" onClick={document.getElementById("download_' + res.file.name + '").click();}><u>Download ( ' + res.file.name + ' )</u></button>')
+                document.getElementById('file-download').insertAdjacentHTML('beforeend', '<a href="data:' + res.file.name + ';base64,' + btoa(res.file.data.join('')) + '" download=' + res.file.name + ' id="download_' + res.file.name + '" ></a>  <button class="phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80" style="margin-top: 35px;" onClick={document.getElementById("download_' + res.file.name + '").click();}><u>Download ( ' + res.file.name + ' )</u></button>')
             })
         }
 
@@ -146,6 +174,9 @@
                         document.getElementById('message').innerHTML = ''
                         document.getElementById('data-selector-symbol').innerHTML = ''
                         jobj['symbols'].map(function (a) { document.getElementById('data-selector-symbol').insertAdjacentHTML('beforeend', '<<option value="' + a + '">' + a + '</option>'); })
+                        document.getElementById('data-selector-dates').innerHTML = ''
+                        jobj['dates'].map(function (a) { document.getElementById('data-selector-dates').insertAdjacentHTML('beforeend', '<<option value="' + a + '">' + a + '</option>'); })
+
                         get_data()
                     }
                     else {
@@ -166,8 +197,17 @@
             });
         });
 
+        function add_dates_dropdown_for_hourly(selection) {
+            if (selection == "Hourly") {
+                $('#data-selector-dates')[0].style = "display: initial"
+            }
+            if (selection == "Daily") {
+                $('#data-selector-dates')[0].style = "display: none"
+            }
+        }
+
         function get_data() {
-            data = { _method: 'post', _csrf_token: '<%= get_csrf_token() %>', action: 'get_graph', symbol: document.getElementById('data-selector-symbol').value, time: document.getElementById('data-selector-time').value };
+            data = { _method: 'post', _csrf_token: '<%= get_csrf_token() %>', action: 'get_graph', symbol: document.getElementById('data-selector-symbol').value, time: document.getElementById('data-selector-time').value, date: document.getElementById('data-selector-dates').value };
             url = "/stocks/graph"
             request = $.post(url, data);
             request.done(function (res) {

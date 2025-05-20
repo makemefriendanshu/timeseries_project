@@ -6,9 +6,18 @@ defmodule TimeseriesProjectWeb.StockController do
   alias TimeseriesProject.Repo
 
   def home(conn, _params) do
-    symbols = Repo.all(Stock) |> Enum.map(fn x -> x.symbol end) |> Enum.uniq()
-    time_axis = ["Hourly", "Daily"]
-    render(conn, :home, symbols: symbols, time_axis: time_axis)
+    stocks = Repo.all(Stock)
+    symbols = stocks |> Enum.map(fn x -> x.symbol end) |> Enum.uniq() |> Enum.sort()
+    time_axis = ["Daily", "Hourly"]
+
+    dates =
+      stocks
+      |> Enum.map(fn x ->
+        x.timestamp |> String.to_integer() |> DateTime.from_unix!() |> DateTime.to_date()
+      end)
+      |> Enum.uniq()
+
+    render(conn, :home, symbols: symbols, time_axis: time_axis, dates: dates)
   end
 
   def get_data(conn, %{"action" => "get_graph", "symbol" => symbol, "time" => "Daily"} = _params) do
@@ -58,12 +67,24 @@ defmodule TimeseriesProjectWeb.StockController do
     |> json(%{timestamps: timestamps})
   end
 
-  def get_data(conn, %{"action" => "get_graph", "symbol" => symbol, "time" => "Hourly"} = _params) do
+  def get_data(
+        conn,
+        %{"action" => "get_graph", "symbol" => symbol, "time" => "Hourly", "date" => date} =
+          _params
+      ) do
     stocks = Repo.all(Stock)
 
     timestamps =
       stocks
-      |> Enum.filter(&(&1.symbol == symbol))
+      |> Enum.filter(
+        &(&1.symbol == symbol &&
+            &1.timestamp
+            |> String.to_integer()
+            |> DateTime.from_unix!()
+            |> DateTime.to_date()
+            |> Date.to_string() ==
+              date)
+      )
       |> Enum.map(
         &%{
           "timestamp" =>
@@ -109,24 +130,41 @@ defmodule TimeseriesProjectWeb.StockController do
       Stock
       |> Repo.delete_all()
 
-      file.path
-      |> Path.expand(__DIR__)
-      |> File.stream!()
-      |> CSV.decode!(headers: true, separator: ?\t, delimiter: "\n")
-      |> Enum.to_list()
-      |> Enum.map(fn n ->
-        %Stock{}
-        |> Stock.changeset(n)
-        |> Repo.insert()
-      end)
+      list =
+        file.path
+        |> Path.expand(__DIR__)
+        |> File.stream!()
+        |> CSV.decode!(headers: true, separator: ?\t, delimiter: "\n")
+        |> Enum.to_list()
+        |> Enum.map(fn x ->
+          %{
+            price: x["price"],
+            symbol: x["symbol"],
+            timestamp: x["timestamp"],
+            inserted_at: NaiveDateTime.local_now(),
+            updated_at: NaiveDateTime.local_now()
+          }
+        end)
+
+      Repo.insert_all(Stock, list)
+      stocks = Repo.all(Stock)
 
       symbols =
-        Repo.all(Stock)
+        stocks
         |> Enum.map(fn x -> x.symbol end)
         |> Enum.uniq()
+        |> Enum.sort()
+
+      dates =
+        stocks
+        |> Enum.map(fn x ->
+          x.timestamp |> String.to_integer() |> DateTime.from_unix!() |> DateTime.to_date()
+        end)
+        |> Enum.uniq()
+        |> Enum.sort()
 
       conn
-      |> json(%{success: "Success. File upload is completed.", symbols: symbols})
+      |> json(%{success: "Success. File upload is completed.", symbols: symbols, dates: dates})
     else
       conn
       |> json(%{failure: "Failure. Please provide TSV file."})
